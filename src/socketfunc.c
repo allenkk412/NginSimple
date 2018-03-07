@@ -6,15 +6,22 @@
 #include <sys/epoll.h>        //epoll functions
 #include <fcntl.h>            //fcntl()
 #include <string.h>           //bzero()
+#include <stdio.h>
 
 int set_fd_nonblocking( int fd )
 {
     int flag = fcntl(fd, F_GETFL, 0) ;
     if( flag < 0 )
+    {
+        printf("123");
         return -1;
-    if(fcntl(fd, F_SETFL, flag | O_NONBLOCK) < 0)
-        return -1;
+    }
 
+    if(fcntl(fd, F_SETFL, flag | O_NONBLOCK) < 0)
+    {
+        printf("123");
+        return -1;
+    }
     return 0;
 }
 
@@ -25,7 +32,10 @@ int socket_bind_listen(int port)
 
     // 创建socket，返回监听描述符
     if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
-        return -1;
+    {
+         printf("123");
+         return -1;
+    }
 
     //// 设置listenfd为非阻塞
     //set_fd_nonblocking(listenfd);
@@ -33,7 +43,11 @@ int socket_bind_listen(int port)
     // 消除bind时的"Address already in use."错误
     int reuse = 1;
     if(setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1)
+    {
+        printf("123");
         return -1;
+    }
+
 
     // 设置服务器IP和Port，绑定协议地址和监听描述符
     bzero(&listenaddr, sizeof(listenaddr));
@@ -42,11 +56,19 @@ int socket_bind_listen(int port)
     listenaddr.sin_port            = htons(port);
 
     if ( bind(listenfd, (struct sockaddr*)&listenaddr, sizeof(listenaddr)) == -1 )
-		return -1;
+    {
+        printf("123");
+        return -1;
+    }
+
 
     // 开始监听，最大等待队列长为LISTENQ(未完成连接队列 + 已完成连接队列）
     if (listen(listenfd, LISTENQ) == -1 )
-		return -1;
+    {
+        printf("123");
+        return -1;
+    }
+
 
     return listenfd;
 }
