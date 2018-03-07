@@ -27,8 +27,8 @@ int socket_bind_listen(int port)
     if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
         return -1;
 
-    // 设置listenfd为非阻塞
-    set_fd_nonblocking(listenfd);
+    //// 设置listenfd为非阻塞
+    //set_fd_nonblocking(listenfd);
 
     // 消除bind时的"Address already in use."错误
     int reuse = 1;
