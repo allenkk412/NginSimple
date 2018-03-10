@@ -48,7 +48,6 @@ int socket_bind_listen(int port)
         return -1;
     }
 
-
     // 设置服务器IP和Port，绑定协议地址和监听描述符
     bzero(&listenaddr, sizeof(listenaddr));
     listenaddr.sin_family          = AF_INET;
@@ -61,7 +60,6 @@ int socket_bind_listen(int port)
         return -1;
     }
 
-
     // 开始监听，最大等待队列长为LISTENQ(未完成连接队列 + 已完成连接队列）
     if (listen(listenfd, LISTENQ) == -1 )
     {
@@ -69,7 +67,5 @@ int socket_bind_listen(int port)
         return -1;
     }
 
-
     return listenfd;
 }
-

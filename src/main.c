@@ -8,9 +8,9 @@
 #include <unistd.h>     //close()
 
 #include "socketfunc.h"
-//#include "error.h"
-//#include "util.h"
-//#include "connection.h"
+#include "error.h"
+#include "util.h"
+#include "connection.h"
 #include "ns_epoll.h"
 
 extern struct epoll_event* evlist;
@@ -56,11 +56,13 @@ int main()
                 // 新连接事件: accept 连接，并将返回新的连接连接描述符添加到epfd的兴趣列表中
                 while((connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &addrlen) ) > 0)
                 {
-                    printf("new connection.");
+                    printf("new connection.\n");
                     // 循环抱住accept调用: ET模式，多个就绪连接到达时候，只会通知一次，accept只处理一个连接
                     set_fd_nonblocking(connfd);
-                    ev.data.fd = connfd;
-                    ev.events = EPOLLIN | EPOLLET;
+
+                    ns_epoll_add(epfd, confd, nullptr, EPOLLIN | EPOLLET);
+                    if( epoll_ctl( epfd, EPOLL_CTL_ADD, connfd, &ev) == -1)
+                        perror("epoll_ctl: ADD");
                 }
 
             }else {
@@ -69,7 +71,7 @@ int main()
                 {
                 // 处理读事件
                 // do_read();
-                    printf("read.");
+                    printf("read.\n");
                     n = 0;
                     while((nread = read(fd, rbuf + n, sizeof(rbuf) - 1) ) > 0)
                         n += nread;
@@ -110,9 +112,6 @@ int main()
 
 
         }
-
-
-
 
     }
    return 0;
