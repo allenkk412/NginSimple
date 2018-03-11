@@ -11,8 +11,6 @@ struct Connection{
     //time_t active_time;            // 上一次活跃时间
     http_request_t req;                   // 对应的http请求
 
-    //
-
 };
 
 typedef struct Connection connection_t;

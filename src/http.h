@@ -4,10 +4,24 @@
 #include "../lib/http_parser.h"
 #include "connection.h"
 
+#include <time.h>
+
+#define     BUFFSIZE    10*1024
 
 struct HttpRequest
 {
     connection_t *c;        // 所归属的Connetion结构体
+    char inbuf[BUFFSIZE];
+    char outbuf[BUFFSIZE];
+
+    int fd;
+    int epoll_fd;
+    int status;
+    int method;
+
+    http_parser          parser;
+    http_parser_settings settings;
+
 
 };
 
@@ -15,7 +29,11 @@ typedef struct HttpRequest http_request_t;
 
 struct HttpResponse
 {
-
+    int fd;
+    int keep_alive;
+    timer_t mtime;
+    int modified;
+    int status;
 };
 
 typedef struct HttpResponse http_response_t;
