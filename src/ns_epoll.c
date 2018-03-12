@@ -74,5 +74,14 @@ int ns_epoll_mod(int epoll_fd, int fd, connection_t *c, uint32_t events)
 
 int ns_epoll_wait( int epoll_fd, struct epoll_event *evs, int max_events, int timeout)
 {
-    return epoll_wait(epoll_fd, evs, max_events, timeout);
+    int i = 0;
+    i = epoll_wait(epoll_fd, evs, max_events, timeout);
+    if( i == -1)
+    {
+        printf("ERROR: ns_epoll_wait.\n");
+        fflush(stdout);
+        return -1;
+    }
+
+    return i;
 }
