@@ -28,20 +28,21 @@ int ns_epoll_add(int epoll_fd, int fd, connection_t *c, uint32_t events)
 
     if(rc == -1)
     {
-        perror("epoll_ctl : add listenfd");
+        perror("epoll_ctl : add ");
         return -1;
     }
 
     return rc;
 }
 
-int ns_epoll_del(int epoll_fd, int fd, connection_t *c, uint32_t events)
+int ns_epoll_del(int epoll_fd, int fd, connection_t *c)
 {
     int rc;
-    struct epoll_event event;
-    event.data.ptr = c;
-    event.events = events;
-    rc = epoll_ctl(epoll_fd, EPOLL_CTL_DEL, c->fd, &event);
+    // EPOLL_CTL_DEL忽略参数ev
+    // struct epoll_event event;
+    // event.data.ptr = c;
+    // event.events = events;
+    rc = epoll_ctl(epoll_fd, EPOLL_CTL_DEL, c->fd, NULL);
 
     if(rc == -1)
     {

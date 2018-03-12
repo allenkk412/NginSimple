@@ -1,5 +1,6 @@
 #include "socketfunc.h"
 #include "util.h"
+#include "ns_epoll.h"
 
 #include <netinet/in.h>       //struct sockaddr_in
 #include <sys/socket.h>       //socket,bind,listen,,,
@@ -7,6 +8,7 @@
 #include <fcntl.h>            //fcntl()
 #include <string.h>           //bzero()
 #include <stdio.h>
+#include <time.h>
 
 int set_fd_nonblocking( int fd )
 {
@@ -69,3 +71,4 @@ int socket_bind_listen(int port)
 
     return listenfd;
 }
+

@@ -8,20 +8,22 @@
 
 #define     BUFFSIZE    10*1024
 
+struct Connection;
+
 struct HttpRequest
 {
-    connection_t *c;        // 所归属的Connetion结构体
+    struct Connection *req_connection;        // 所归属的Connetion结构体
     char inbuf[BUFFSIZE];
-    char outbuf[BUFFSIZE];
+    //char outbuf[BUFFSIZE];
 
     int fd;
     int epoll_fd;
     int status;
     int method;
+    char url[256];
 
-    http_parser          parser;
+    http_parser             parser;
     http_parser_settings settings;
-
 
 };
 
@@ -38,8 +40,7 @@ struct HttpResponse
 
 typedef struct HttpResponse http_response_t;
 
-
-void InitParser(connection_t *con);
+void InitRequest(connection_t *con);
 
 // http_parser_execute 执行过程中的7个回调函数
 int OnMessageBeginCallback(http_parser *parser);
