@@ -25,14 +25,14 @@ int main()
     int listenfd = socket_bind_listen( 5000);
     set_fd_nonblocking(listenfd);
 
-    struct sockaddr_in cliaddr;
+   // struct sockaddr_in cliaddr;
 
-    char rbuf[1024];
-    char wbuf[1024];
+    //char rbuf[1024];
+    //char wbuf[1024];
 
     int epfd = ns_epoll_create(0);
-    int connfd, nfds, i, n, nread, nwrite;
-    socklen_t addrlen;
+    int nfds, i;
+    //socklen_t addrlen;
 
     struct epoll_event ev;
     ev.data.fd = listenfd;
@@ -43,14 +43,14 @@ int main()
    printf("epoll add listenfd.\n");
    for(;;)
     {
-        printf("11\n");
-        addrlen = sizeof(cliaddr);
+        //addrlen = sizeof(cliaddr);
 
         nfds = ns_epoll_wait(epfd, evlist, MAXEVENTS, 20);
 
 
         for( i = 0;i < nfds; i++)
         {
+            printf("11\n");
             // 获取指向当前处理事件的指针curr_event
             struct epoll_event *curr_event = evlist + i;
             int fd =  *((int *)(curr_event->data.ptr));
@@ -61,16 +61,18 @@ int main()
                 // 处理已连接上的新的事件
 
                 connection_t *c = curr_event->data.ptr;
-                //int status;
-                assert( c != NULL);
+                //int status = 0;
+                //assert( c != NULL);
 
                 //if(connection_is_expired(c))
                 //    continue;
 
-                if( curr_event.events & EPOLLIN )
+                if( curr_event->events & EPOLLIN )
                 {
                     // 处理读事件
                     // do_read();
+                    //status = HandleRequest(c);
+                    HandleRequest(c);
 
 
                 }
@@ -79,22 +81,22 @@ int main()
                 {
                 // 处理写事件
                 // do_write();
-                    sprintf(wbuf, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\nHellp World", 11);
-                    nwrite = 0;
-                    int data_size = strlen(wbuf);
-                    n = data_size;
-                    while(n > 0)
-                    {
-                        nwrite = write(fd, wbuf + data_size - n, n);
-                        if(nwrite < n)
-                        {
-                            if(nwrite == -1 && errno != EAGAIN)
-                                perror("write error");
-                            break;
-                        }
-
-                        n -= nwrite;
-                    }
+//                    sprintf(wbuf, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\nHellp World", 11);
+//                    int nwrite = 0;
+//                    int data_size = strlen(wbuf);
+//                    n = data_size;
+//                    while(n > 0)
+//                    {
+//                        nwrite = write(fd, wbuf + data_size - n, n);
+//                        if(nwrite < n)
+//                        {
+//                            if(nwrite == -1 && errno != EAGAIN)
+//                                perror("write error");
+//                            break;
+//                        }
+//
+//                        n -= nwrite;
+//                    }
 
                 }
 

@@ -82,7 +82,7 @@ int server_accept(int listen_fd, int epoll_fd)
     socklen_t saddrlen = sizeof(struct sockaddr_in);
 
     // 新连接事件: accept 连接，并将返回新的连接连接描述符添加到epfd的兴趣列表中
-    while((conn_fd = accept(listenfd, (struct sockaddr *) &saddr, &saddrlen) ) > 0)
+    while((conn_fd = accept(listen_fd, (struct sockaddr *) &saddr, &saddrlen) ) > 0)
     {
                 // 循环抱住accept调用: ET模式，多个就绪连接到达时候，只会通知一次，accept只处理一个连接
         connection_accept(conn_fd, epoll_fd,&saddr);

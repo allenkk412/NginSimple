@@ -15,7 +15,7 @@
 
 void InitRequest(connection_t *con)
 {
-    http_request_t *req = &(con->con_request);
+    http_request_t *req = (http_request_t* )(&(con->con_request));
     req->req_connection = con;
 
     memset(req->inbuf, 0, BUFFSIZE);
@@ -101,7 +101,7 @@ int OnMessageCompleteCallback(http_parser *parser)
 }
 
 
-void connection_set_nodelay(connection_t *c)
+void connection_set_nodelay(connection_t *con)
 {
     /*
       TCP_NODELAYIf set, disable the Nagle algorithm. This means that segments
@@ -113,21 +113,21 @@ void connection_set_nodelay(connection_t *c)
     */
 
     int enable = 1;
-    setsockopt(c->fd, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable));
+    setsockopt(con->fd, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable));
 }
 
-int connection_close(connection_t *c)
+int connection_close(connection_t *con)
 {
-    if (c == NULL)
+    if (con == NULL)
     return 0;
 
-    ns_epoll_del(c->epoll_fd, c->fd, c);
-    close(c->fd);
+    ns_epoll_del(con->epoll_fd, con->fd, con);
+    close(con->fd);
 
     // connection_unregister(c);
 
     // 释放c所指向的连接的Connection结构体空间，包括连接所对应的HttpRequest结构体空间
-    free(c);
+    free(con);
 
     return 0;
 }
