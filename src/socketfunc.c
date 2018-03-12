@@ -78,6 +78,8 @@ int server_accept(int listen_fd, int epoll_fd)
     int conn_fd;
     // 设置为静态局部变量，减少内存分配和释放的操作次数
     // static struct sockaddr_in saddr;
+    printf("enter server_accept().\n");
+    fflush(stdout);
     struct sockaddr_in saddr;
     socklen_t saddrlen = sizeof(struct sockaddr_in);
 

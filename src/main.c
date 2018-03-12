@@ -53,8 +53,12 @@ int main()
             printf("11\n");
             // 获取指向当前处理事件的指针curr_event
             struct epoll_event *curr_event = evlist + i;
-            int fd =  *((int *)(curr_event->data.ptr));
+            printf("22\n");
+            //int fd =  *((int *)(curr_event->data.ptr));
+            int fd = curr_event->data.fd;
+            printf("33\n");
             if( fd == listenfd ){
+                printf("44\n");
                 // accept新的连接，创建和初始化连接对应的Connection和HttpRequest结构体
                 server_accept(listenfd, epfd);
             }else {

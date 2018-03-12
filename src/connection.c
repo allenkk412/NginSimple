@@ -44,6 +44,7 @@ void InitRequest(connection_t *con)
 
 int HandleRequest(connection_t *con)
 {
+    printf("enter HandleRequest()\n");
     int req_status = 0;
 
     return req_status;
