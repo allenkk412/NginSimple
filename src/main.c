@@ -76,7 +76,7 @@ int main()
                     // 处理读事件
                     // do_read();
                     //status = HandleRequest(c);
-                    HandleRequest(c);
+                    RequestHandle(c);
 
 
                 }

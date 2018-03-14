@@ -12,8 +12,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
-void InitRequest(connection_t *con)
+void RequestInit(connection_t *con)
 {
     http_request_t *req = (http_request_t* )(&(con->con_request));
     req->req_connection = con;
@@ -21,9 +22,10 @@ void InitRequest(connection_t *con)
     memset(req->inbuf, 0, BUFFSIZE);
     memset(req->url, 0, 256);
 
+    req->allrecved = 0;
     req->fd = con->fd;
     req->epoll_fd = con->epoll_fd;
-    req->status = 0;
+    req->req_status = 0;
     req->method = 0;
 
     bzero(&(req->settings), sizeof(req->settings) );
@@ -42,16 +44,145 @@ void InitRequest(connection_t *con)
 
 }
 
-int HandleRequest(connection_t *con)
+
+int RequestRecv(connection_t *con)
+{
+    // 接收报文
+    /**
+     *  函数返回0  : client close or read EOF
+     *  函数返回1  : 无数据可读
+     *  函数返回-1 : 读数据出错
+     */
+    size_t     nparsed = 0;
+    ssize_t    nrecved = 0;
+
+    // nrecved > 0， 每次接收到的数据，添加进连接inbuf末尾，末尾偏移为con_request.allrecved,allrecved记录当前连接接收数据大小
+    while((nrecved = recv(con->fd, con->con_request.inbuf + con->con_request.allrecved, sizeof(con->con_request.inbuf), 0)) > 0)
+    {
+        con->con_request.allrecved += nrecved;
+    }
+
+    // nrecved == 0, recv() retrun 0 on EOF
+    // or "When a TCP connection is closed on one side read() on the other side returns 0 byte."
+    if(nrecved == 0)
+        return 0;
+
+    if(nrecved < 0)
+    {
+        if(errno != EAGAIN)
+        {
+            printf("ERROR: recv() error");
+            fflush(stdout);
+            return -1;
+        }else if (errno == EAGAIN){
+            return 1;                    //非阻塞IO，无数据可读
+        }
+    }
+
+    return 1;
+/* old */
+//    char buf[BUFFSIZE];
+//    int len;
+//
+//    while(1)
+//    {
+//        len = recv(con->fd, buf, sizeof(buf), 0);
+//
+//        if(len == 0)                /* client close or read EOF */
+//            return 0;
+//
+//        if(len == -1)
+//        {
+//            if(errno != EAGAIN)
+//            {
+//                printf("ERROR: recv error.");
+//                fflush(stdout);
+//                return -1;          /* recv error */
+//            }else if(errno == EAGAIN)
+//                return 1;           /* recv again*/
+//        }
+//
+//        /* if len > 0*/
+//        strncat( con->con_request.inbuf, buf, len);
+//    }
+//    return 1;
+}
+
+int RequestParsed(connection_t *con)
+{
+    int nparsed = http_parser_execute(con->con_request.parser, con->con_request.settings, con->con_request.inbuf, strlen(con->con_request.inbuf));
+    if(con->con_request.parser.http_errno != HPE_OK)
+    {
+        printf("ERROR: http_parser_execute(), http_errno != HPE_OK")
+        fflush("stdout");
+        return -1;
+    }
+
+    return nparsed;
+}
+
+int RequestHandle(connection_t *con)
 {
     printf("enter HandleRequest()\n");
-    int req_status = 0;
+    int status = 0;
+
+    // 接收报文
+    status = RequestRecv(con);
+    if(status == -1 || status == 0)  // error or client close
+        goto err;
+
+    /*
+     *解析报文，解析状态存储在con->con_request.req_status中
+    * req_status = 1,解析完成
+    * req_status = 0,未解析完成
+    * req_status在http_parser_execute()中的回调函数中设置
+     */
+    RequestParsed(con);
+    if(con->con_request.req_status != 1)
+        return 0; // http解析未完成，从RequestHandle函数返回，等下一次读事件触发
+
+
+
+
+//    size_t len = 80*1024, nparsed;
+//    char buf[len];
+//    ssize_t recved;
+//
+//    recved = recv(fd, buf, len, 0);
+//
+//    if (recved < 0) {
+//    /* Handle error. */
+//    }
+//
+//    /* Start up / continue the parser.
+//    * Note we pass recved==0 to signal that EOF has been received.
+//    */
+//    nparsed = http_parser_execute(parser, &settings, buf, recved);
+//
+//    if (parser->upgrade) {
+//    /* handle new protocol */
+//    } else if (nparsed != recved) {
+//    /* Handle error. Usually just close the connection. */
+//    }
 
     return req_status;
+
+    err:
+    close:
+    // 发生错误或客户端正常关闭
+    // 关闭相应连接描述符号、删除epoll兴趣事件、释放Connection数据结构
+    connection_close(con);
+
 }
 
 int OnMessageBeginCallback(http_parser *parser)
 {
+    connection_t *c = (connection_t *)parser->data;
+    c->con_request.req_status = 0;
+    c->con_request.allrecved = 0;
+    memset(c->con_request.url, 0 , sizeof(c->con_request.url));
+    memset(c->con_request.inbuf, 0, sizeof(c->con_request.inbuf));
+
     return 0;
 }
 
@@ -98,6 +229,8 @@ int OnMessageCompleteCallback(http_parser *parser)
     }else{
         c->keep_alive = 1;
     }
+
+    c->con_request.req_status = 1;
     return 0;
 }
 
@@ -153,7 +286,7 @@ connection_t* connection_accept(int conn_fd, int epoll_fd, struct sockaddr_in *p
     c->active_time = time(NULL);
 
     // 初始化连接对应的请求 c->req HttpRequest结构体
-    InitRequest(c);
+    RequestInit(c);
 
     set_fd_nonblocking(c->fd);
     connection_set_nodelay(c);

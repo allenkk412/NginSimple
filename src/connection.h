@@ -21,10 +21,10 @@ struct HttpRequest
     connection_t *req_connection;        // 所归属的Connetion结构体
     char inbuf[BUFFSIZE];
     //char outbuf[BUFFSIZE];
-
+    ssize_t allrecved;
     int fd;
     int epoll_fd;
-    int status;
+    int req_status;
     int method;
     char url[256];
 
@@ -55,8 +55,12 @@ struct Connection
 
 
 
-void InitRequest(connection_t *con);
-int HandleRequest(connection_t *con);
+void   RequestInit(connection_t *con);
+int    RequestRecv(connection_t *con);
+int    RequestParsed(connection_t *con);
+int    RequestHandle(connection_t *con);
+
+
 
 // http_parser_execute 执行过程中的7个回调函数
 int OnMessageBeginCallback(http_parser *parser);
