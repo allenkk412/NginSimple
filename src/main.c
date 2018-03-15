@@ -63,10 +63,15 @@ int main()
                 server_accept(listenfd, epfd);
             }else {
                 // 处理已连接上的新的事件
+                connection_t *c = (connection_t *)(curr_event->data.ptr);
 
-                connection_t *c = curr_event->data.ptr;
-                //int status = 0;
-                //assert( c != NULL);
+                // 排除错误事件
+                if (((*curr_event).events & EPOLLERR) || ((*curr_event).events & EPOLLHUP)
+                    || (!((*curr_event).events & EPOLLIN)))
+                {
+                    connection_close(c);
+                    continue;
+                }
 
                 //if(connection_is_expired(c))
                 //    continue;
@@ -76,33 +81,19 @@ int main()
                     // 处理读事件
                     // do_read();
                     //status = HandleRequest(c);
-                    RequestHandle(c);
+                    if(RequestHandle(c) == 0)
+                        continue;       // 返回0，结束当前事件处理
 
+                    ResponseHandle(c);
 
-                }
-
-                if( evlist[i].events & EPOLLOUT )
-                {
-                // 处理写事件
-                // do_write();
-//                    sprintf(wbuf, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\nHellp World", 11);
-//                    int nwrite = 0;
-//                    int data_size = strlen(wbuf);
-//                    n = data_size;
-//                    while(n > 0)
-//                    {
-//                        nwrite = write(fd, wbuf + data_size - n, n);
-//                        if(nwrite < n)
-//                        {
-//                            if(nwrite == -1 && errno != EAGAIN)
-//                                perror("write error");
-//                            break;
-//                        }
-//
-//                        n -= nwrite;
-//                    }
+                    if(c->keep_alive)
+                        ns_epoll_mod(epfd, c->fd, c, (EPOLLIN | EPOLLET));
+                    else
+                        //ns_epoll_del(epfd, c->fd, c);
+                        connection_close(c);
 
                 }
+
 
             }
 

@@ -2,12 +2,14 @@
 #define CONNECTION_H
 
 #include "../lib/http_parser.h"
+#include "util.h"
 
 #include <netinet/in.h>
 #include <sys/epoll.h>
 #include <time.h>
+#include <sys/stat.h>
 
-#define     BUFFSIZE    10*1024
+//#define     BUFFSIZE    10*1024
 
 struct HttpRequest;
 struct HttpResponse;
@@ -60,7 +62,7 @@ int    RequestRecv(connection_t *con);
 int    RequestParsed(connection_t *con);
 int    RequestHandle(connection_t *con);
 
-
+int    ResponseHandle(connection_t *con);
 
 // http_parser_execute 执行过程中的7个回调函数
 int OnMessageBeginCallback(http_parser *parser);

@@ -1,6 +1,7 @@
 #include "connection.h"
 #include "ns_epoll.h"
 #include "socketfunc.h"
+#include "http.h"
 
 
 #include <netinet/in.h>       // struct sockaddr_in
@@ -13,6 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <errno.h>
+
 
 void RequestInit(connection_t *con)
 {
@@ -53,7 +55,6 @@ int RequestRecv(connection_t *con)
      *  函数返回1  : 无数据可读
      *  函数返回-1 : 读数据出错
      */
-    size_t     nparsed = 0;
     ssize_t    nrecved = 0;
 
     // nrecved > 0， 每次接收到的数据，添加进连接inbuf末尾，末尾偏移为con_request.allrecved,allrecved记录当前连接接收数据大小
@@ -110,11 +111,11 @@ int RequestRecv(connection_t *con)
 
 int RequestParsed(connection_t *con)
 {
-    int nparsed = http_parser_execute(con->con_request.parser, con->con_request.settings, con->con_request.inbuf, strlen(con->con_request.inbuf));
+    int nparsed = http_parser_execute(&con->con_request.parser, &con->con_request.settings, con->con_request.inbuf, strlen(con->con_request.inbuf));
     if(con->con_request.parser.http_errno != HPE_OK)
     {
-        printf("ERROR: http_parser_execute(), http_errno != HPE_OK")
-        fflush("stdout");
+        printf("ERROR: http_parser_execute(), http_errno != HPE_OK");
+        fflush(stdout);
         return -1;
     }
 
@@ -123,6 +124,12 @@ int RequestParsed(connection_t *con)
 
 int RequestHandle(connection_t *con)
 {
+    /*
+    * RequestRecv()
+    * RequestParsed()
+    *   函数返回1，完成请求的解析，在事件循环中完成接下来的处理
+    *   函数返回0，解析未完成或连接关闭，退出当前事件处理
+    */
     printf("enter HandleRequest()\n");
     int status = 0;
 
@@ -141,38 +148,35 @@ int RequestHandle(connection_t *con)
     if(con->con_request.req_status != 1)
         return 0; // http解析未完成，从RequestHandle函数返回，等下一次读事件触发
 
-
-
-
-//    size_t len = 80*1024, nparsed;
-//    char buf[len];
-//    ssize_t recved;
-//
-//    recved = recv(fd, buf, len, 0);
-//
-//    if (recved < 0) {
-//    /* Handle error. */
-//    }
-//
-//    /* Start up / continue the parser.
-//    * Note we pass recved==0 to signal that EOF has been received.
-//    */
-//    nparsed = http_parser_execute(parser, &settings, buf, recved);
-//
-//    if (parser->upgrade) {
-//    /* handle new protocol */
-//    } else if (nparsed != recved) {
-//    /* Handle error. Usually just close the connection. */
-//    }
-
-    return req_status;
+    return 1;   // 返回1，表示HTTP请求已解析完毕，进入事件处理循环完成接下来的工作
 
     err:
-    close:
+    //close:
     // 发生错误或客户端正常关闭
     // 关闭相应连接描述符号、删除epoll兴趣事件、释放Connection数据结构
     connection_close(con);
+    return 0;    // 连接关闭，返回0，然后退出事件处理循环
+}
 
+int ResponseHandle(connection_t *con)
+{
+    struct stat sbuf;
+    char filename[256];
+    strcpy(filename, con->con_request.url);
+
+    //strncpy(filename, con->con_request.url, strlen(con->con_request.url));
+    // 默认请求index.html
+    if(filename[strlen(filename) - 1] == '/'){
+        strcat(filename, "index.html");
+    }
+
+
+    if(error_process(&sbuf, filename, con->fd))
+        return -1;
+
+    serve_static(con->fd, filename, sbuf.st_size, con);
+
+    return 0;
 }
 
 int OnMessageBeginCallback(http_parser *parser)
