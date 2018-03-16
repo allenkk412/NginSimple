@@ -11,10 +11,14 @@
 
 int error_process(struct stat* sbufptr, char *filename, int fd)
 {
+    printf("enter error_process\n");
         // 处理文件找不到错误
-    if(stat(filename, sbufptr) < 0)
+    char filename1[256] = "index.html";
+
+    if(stat(filename1, sbufptr) < 0)
     {
-        do_error(fd, filename, "404", "Not Found", "Can't find the file");
+        printf("can't find file.\n");
+        do_error(fd, filename1, "404", "Not Found", "Can't find the file");
         return 1;
     }
 
@@ -22,7 +26,8 @@ int error_process(struct stat* sbufptr, char *filename, int fd)
     //S_IFREG :常规文件、S_IRUSR:文件所有者具有可读取权限
     if(!(S_ISREG((*sbufptr).st_mode)) || !(S_IRUSR & (*sbufptr).st_mode))
     {
-        do_error(fd, filename, "403", "Forbidden", "Can't read the file");
+        printf("can't read file.\n");
+        do_error(fd, filename1, "403", "Forbidden", "Can't read the file");
         return 1;
     }
 
@@ -33,6 +38,7 @@ int error_process(struct stat* sbufptr, char *filename, int fd)
 // 响应错误信息
 void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_msg)
 {
+    printf("%s\n", __FUNCTION__);
     // 响应头缓冲（512字节）和数据缓冲（10240字节）
     char header[512];
     char body[BUFFSIZE];
@@ -52,6 +58,7 @@ void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_ms
     sprintf(header, "%sContent-length: %d\r\n\r\n", header, (int)strlen(body));
 
     // Add 404 Page
+    printf("%s\n%s",body, header);
 
     // 发送错误信息
     rio_writen(fd, header, strlen(header));
@@ -62,6 +69,7 @@ void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_ms
 // 处理静态文件请求
 void serve_static(int fd, char *filename, size_t filesize, connection_t *con)
 {
+    printf("enter server_static.\n");
     // 响应头缓冲（512字节）
     char header[512];
 

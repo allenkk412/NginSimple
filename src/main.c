@@ -25,14 +25,8 @@ int main()
     int listenfd = socket_bind_listen( 5000);
     set_fd_nonblocking(listenfd);
 
-   // struct sockaddr_in cliaddr;
-
-    //char rbuf[1024];
-    //char wbuf[1024];
-
     int epfd = ns_epoll_create(0);
     int nfds, i;
-    //socklen_t addrlen;
 
     struct epoll_event ev;
     ev.data.fd = listenfd;
@@ -46,7 +40,6 @@ int main()
         //addrlen = sizeof(cliaddr);
 
         nfds = ns_epoll_wait(epfd, evlist, MAXEVENTS, 20);
-
 
         for( i = 0;i < nfds; i++)
         {
@@ -86,11 +79,14 @@ int main()
 
                     ResponseHandle(c);
 
-                    if(c->keep_alive)
-                        ns_epoll_mod(epfd, c->fd, c, (EPOLLIN | EPOLLET));
-                    else
-                        //ns_epoll_del(epfd, c->fd, c);
+                    if(!c->keep_alive)
                         connection_close(c);
+
+//                    if(c->keep_alive)
+//                        ns_epoll_mod(epfd, c->fd, c, (EPOLLIN | EPOLLET));
+//                    else
+//                        //ns_epoll_del(epfd, c->fd, c);
+//                        connection_close(c);
 
                 }
 

@@ -70,7 +70,7 @@ int OnUrlCallback(http_parser *parser, const char *at, size_t length);
 int OnHeaderFieldCallback(http_parser *parser, const char *at, size_t length);
 int OnHeaderValueCallback(http_parser *parser, const char *at, size_t length);
 int OnHeadersCompleteCallback(http_parser *parser);
-int OnbodyCallback(http_parser *parser);
+int OnBodyCallback(http_parser *parser);
 int OnMessageCompleteCallback(http_parser *parser);
 
 void connection_set_nodelay(connection_t *con);
