@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 
 //#define     BUFFSIZE    10*1024
+#define    MAXCONNECTION    (10240)
 
 struct HttpRequest;
 struct HttpResponse;
@@ -46,13 +47,14 @@ struct HttpResponse
 
 struct Connection
 {
-    http_request_t           con_request;                   // 对应的http请求
-    int                          fd;                // 连接对应的连接描述符（connfd）
+    http_request_t           con_request;         // 对应的http请求
+    int                          fd;                    // 连接对应的连接描述符（connfd）
     int                          epoll_fd;
     int                          keep_alive;
-    struct epoll_event      event;            // epoll 事件配置
-    struct sockaddr_in      saddr;            // 连接描述符对应socket
-    time_t active_time;            // 上一次活跃时间
+    struct epoll_event      event;                // epoll 事件配置
+    struct sockaddr_in      saddr;                // 连接描述符对应socket
+    time_t                      active_time;       // 上一次活跃时间
+    int                          heap_idx;           // 当前连接在小根堆数组中的序号
 };
 
 
