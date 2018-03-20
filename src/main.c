@@ -9,6 +9,7 @@
 
 #include "socketfunc.h"
 #include "error.h"
+#include "timer.h"
 #include "util.h"
 #include "connection.h"
 #include "ns_epoll.h"
@@ -50,53 +51,52 @@ int main()
             //int fd =  *((int *)(curr_event->data.ptr));
             int fd = curr_event->data.fd;
             printf("33\n");
-            if( fd == listenfd ){
+            if( fd == listenfd )
+            {
                 printf("44\n");
                 // accept新的连接，创建和初始化连接对应的Connection和HttpRequest结构体
                 server_accept(listenfd, epfd);
-            }else {
+            }
+            else
+            {
                 // 处理已连接上的新的事件
                 connection_t *c = (connection_t *)(curr_event->data.ptr);
 
-                // 排除错误事件
-                if (((*curr_event).events & EPOLLERR) || ((*curr_event).events & EPOLLHUP)
-                    || (!((*curr_event).events & EPOLLIN)))
-                {
-                    connection_close(c);
-                    continue;
-                }
+//                // 排除错误事件
+//                if (((*curr_event).events & EPOLLERR) || ((*curr_event).events & EPOLLHUP)
+//                    || (!((*curr_event).events & EPOLLIN)))
+//                {
+//                    connection_close(c);
+//                    continue;
+//                }
 
-                //if(connection_is_expired(c))
-                //    continue;
+                if(connection_is_expired(c))
+                    continue;
 
                 if( curr_event->events & EPOLLIN )
                 {
                     // 处理读事件
-                    // do_read();
-                    //status = HandleRequest(c);
-                    if(RequestHandle(c) == 0)
-                        continue;       // 返回0，结束当前事件处理
+                    // 处理请求，若出错，则该连接设置为超时，交给connection_prune()统一处理
+                    if(RequestHandle(c) >= 0)
+                        connection_set_reactivated(c);
+                    else
+                    {
+                        connection_set_expired(c);
+                        continue;         //退出当前事件处理
+                    }
 
-                    ResponseHandle(c);
+                    if(ResponseHandle(c) >= 0)
+                        connection_set_reactivated(c);
 
+                    // 若不是长连接，将其设置为超时，交给connection_prune()统一处理
                     if(!c->keep_alive)
-                        connection_close(c);
-
-//                    if(c->keep_alive)
-//                        ns_epoll_mod(epfd, c->fd, c, (EPOLLIN | EPOLLET));
-//                    else
-//                        //ns_epoll_del(epfd, c->fd, c);
-//                        connection_close(c);
-
+                        connection_set_expired(c);
                 }
-
-
-            }
-
-
-        }
-
-    }
+            } /* end else */
+        } /* end for i=0;i<nfds;i++ loop */
+        /* prune expired connections */
+        connection_prune();
+    } /* end for(;;) */
    return 0;
-}
+} /* end main*/
 

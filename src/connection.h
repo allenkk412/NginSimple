@@ -1,8 +1,9 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
-#include "../lib/http_parser.h"
-#include "util.h"
+#include  "../lib/http_parser.h"
+#include  "util.h"
+#include  "timer.h"
 
 #include <netinet/in.h>
 #include <sys/epoll.h>
@@ -76,7 +77,10 @@ int OnBodyCallback(http_parser *parser);
 int OnMessageCompleteCallback(http_parser *parser);
 
 void connection_set_nodelay(connection_t *con);
+// 定义为static函数，在该源文件可见，仅供connection_close()调用
+void connection_free(connection_t *con);
 int connection_close(connection_t *con);
+
 connection_t* connection_accept(int conn_fd, int epoll_fd, struct sockaddr_in *paddr);
 
 #endif // CONNECTION_H

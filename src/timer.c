@@ -1,5 +1,4 @@
 #include "timer.h"
-#include "connection.h"
 
 #include <stdio.h>
 
@@ -82,6 +81,8 @@ int heap_insert(connection_t *con)
     con->heap_idx = heap_size - 1;
     heap_percolate_up(con->heap_idx);
 
+    printf("heap_size: %d\n", heap_size);
+
     return 0;
 }
 
@@ -99,6 +100,7 @@ int connection_register(connection_t *con)
 
 void connection_unregister(connection_t *con)
 {
+    // heap_size-- 和 heap_percolate_down()完成DeleteMin操作
     if(heap_size >= 1)
     {
         ns_connections[con->heap_idx] = ns_connections[heap_size - 1];
@@ -125,18 +127,18 @@ void connection_prune()
   }
 }
 
-int connecion_is_expired(connection_t *con)
+int connection_is_expired(connection_t *con)
 {
     return ( (time(NULL) - con->active_time ) > CON_TIMEOUT);
 }
 
-void connecion_set_reactivated(connection_t *con)
+void connection_set_reactivated(connection_t *con)
 {
     con->active_time = time(NULL);
     heap_percolate_down(con->heap_idx);
 }
 
-void connecion_set_expired(connection_t *con)
+void connection_set_expired(connection_t *con)
 {
     con->active_time = 0; // very old time
     heap_percolate_up(con->heap_idx);

@@ -2,6 +2,7 @@
 #include "ns_epoll.h"
 #include "socketfunc.h"
 #include "http.h"
+#include "timer.h"
 
 
 #include <netinet/in.h>       // struct sockaddr_in
@@ -139,7 +140,8 @@ int RequestHandle(connection_t *con)
     * RequestRecv()
     * RequestParsed()
     *   函数返回1，完成请求的解析，在事件循环中完成接下来的处理
-    *   函数返回0，解析未完成或连接关闭，退出当前事件处理
+    *   函数返回0，解析未完成
+    *   函数返回-1，接收错误或连接关闭，退出当前事件处理
     */
     printf("enter HandleRequest()\n");
     int status = 0;
@@ -147,7 +149,7 @@ int RequestHandle(connection_t *con)
     // 接收报文
     status = RequestRecv(con);
     if(status == -1 || status == 0)  // error or client close
-        goto err;
+        return -1;
 
     printf("%s", con->con_request.inbuf);
     /*
@@ -162,12 +164,12 @@ int RequestHandle(connection_t *con)
 
     return 1;   // 返回1，表示HTTP请求已解析完毕，进入事件处理循环完成接下来的工作
 
-    err:
-    //close:
-    // 发生错误或客户端正常关闭
-    // 关闭相应连接描述符号、删除epoll兴趣事件、释放Connection数据结构
-    connection_close(con);
-    return 0;    // 连接关闭，返回0，然后退出事件处理循环
+//    err:
+//    //close:
+//    // 发生错误或客户端正常关闭
+//    // 关闭相应连接描述符号、删除epoll兴趣事件、释放Connection数据结构
+//    connection_close(con);
+//    return -1;    // 连接关闭，返回0，然后退出事件处理循环
 }
 
 int ResponseHandle(connection_t *con)
@@ -282,13 +284,18 @@ int connection_close(connection_t *con)
 
     ns_epoll_del(con->epoll_fd, con->fd, con);
     close(con->fd);
-
-    // connection_unregister(c);
-
+    // 注销连接在最小堆中的定时器事件
+    connection_unregister(con);
     // 释放c所指向的连接的Connection结构体空间，包括连接所对应的HttpRequest结构体空间
-    free(con);
+    connection_free(con);
 
     return 0;
+}
+
+void connection_free(connection_t *con)
+{
+    if(con)
+        free(con);
 }
 
 connection_t* connection_accept(int conn_fd, int epoll_fd, struct sockaddr_in *paddr)
@@ -316,11 +323,11 @@ connection_t* connection_accept(int conn_fd, int epoll_fd, struct sockaddr_in *p
     set_fd_nonblocking(c->fd);
     connection_set_nodelay(c);
 
-//    if (connection_register(c) == ERROR)
-//    {
-//        connection_close(c);
-//        return NULL;
-//    }
+    if (connection_register(c) == -1)
+    {
+        connection_close(c);
+        return NULL;
+    }
 
     // ns_epoll_add()将指向连接的指针c作为用户定义数据传入epoll.data.ptr
     if( ns_epoll_add(epoll_fd, conn_fd, c, EPOLLIN | EPOLLET) == -1 )
