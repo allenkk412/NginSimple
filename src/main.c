@@ -17,15 +17,48 @@
 
 extern struct epoll_event* evlist;
 
+typedef struct
+{
+    uint16_t        port;
+    int               timeout;
+    uint32_t        nworkers;
+    char             *rootdir;
+    int               rootdir_fd;
+}config_t;
+
+config_t server_config ={5000, 60, 4, NULL, 0};
 
 int main()
 {
-    printf("hello world.\n");
-    //int port = 2333;
-    // 创建listen socket
-    int listenfd = socket_bind_listen( 5000);
+    printf("NginSimple:hello world.\n");
+    // 创建listen socket，子进程共享同一个listenfd
+    int listenfd = socket_bind_listen( server_config.port);
     set_fd_nonblocking(listenfd);
 
+    int nums_of_child = server_config.nworkers;
+    while(1)
+    {
+        while(nums_of_child > 0)
+        {
+            switch(fork())
+            {
+                case -1:
+                    printf("ERROR: fork().\n");
+                    continue;
+                case 0:
+                    goto worker;
+                default:
+                    --nums_of_child;
+                    break;
+
+            }
+
+        }
+
+    }
+
+worker:
+    printf("Worker ID: %d started, father is %d.\n", getpid(), getppid());
     int epfd = ns_epoll_create(0);
     int nfds, i;
 
@@ -35,25 +68,18 @@ int main()
     if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1 )
         return -1;
 
-   printf("epoll add listenfd.\n");
    for(;;)
     {
-        //addrlen = sizeof(cliaddr);
 
         nfds = ns_epoll_wait(epfd, evlist, MAXEVENTS, 20);
 
         for( i = 0;i < nfds; i++)
         {
-            printf("11\n");
             // 获取指向当前处理事件的指针curr_event
             struct epoll_event *curr_event = evlist + i;
-            printf("22\n");
-            //int fd =  *((int *)(curr_event->data.ptr));
             int fd = curr_event->data.fd;
-            printf("33\n");
             if( fd == listenfd )
             {
-                printf("44\n");
                 // accept新的连接，创建和初始化连接对应的Connection和HttpRequest结构体
                 server_accept(listenfd, epfd);
             }

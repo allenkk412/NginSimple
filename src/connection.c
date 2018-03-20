@@ -116,11 +116,11 @@ int RequestParsed(connection_t *con)
     //nparsed = http_parser_execute(&con->con_request.parser, &con->con_request.settings, con->con_request.inbuf, strlen(con->con_request.inbuf));
     char request[512];
     strcpy(request, con->con_request.inbuf);
-    printf("1status:%d\n", con->con_request.req_status);
+    // printf("1status:%d\n", con->con_request.req_status);
     nparsed = http_parser_execute(&con->con_request.parser, &con->con_request.settings, request, strlen(request));
 
-    printf("%d\n", nparsed);
-    printf("2status:%d\n", con->con_request.req_status);
+    // printf("%d\n", nparsed);
+    // printf("2status:%d\n", con->con_request.req_status);
 
     if(con->con_request.parser.http_errno != HPE_OK)
     {
@@ -143,7 +143,7 @@ int RequestHandle(connection_t *con)
     *   函数返回0，解析未完成
     *   函数返回-1，接收错误或连接关闭，退出当前事件处理
     */
-    printf("enter HandleRequest()\n");
+    // printf("enter HandleRequest()\n");
     int status = 0;
 
     // 接收报文
@@ -151,7 +151,7 @@ int RequestHandle(connection_t *con)
     if(status == -1 || status == 0)  // error or client close
         return -1;
 
-    printf("%s", con->con_request.inbuf);
+    // printf("%s", con->con_request.inbuf);
     /*
      *解析报文，解析状态存储在con->con_request.req_status中
     * req_status = 1,解析完成
@@ -174,17 +174,17 @@ int RequestHandle(connection_t *con)
 
 int ResponseHandle(connection_t *con)
 {
-    printf("enter responseHandle.");
+    // printf("enter responseHandle.");
     struct stat sbuf;
     char filename[256];
     strcpy(filename, con->con_request.url);
-    printf("filename:%s\n", filename);
+    // printf("filename:%s\n", filename);
     //strncpy(filename, con->con_request.url, strlen(con->con_request.url));
     // 默认请求index.html
     if(filename[strlen(filename) - 1] == '/'){
         strcat(filename, "index.html");
     }
-    printf("enter responseHandle.2");
+    // printf("enter responseHandle.2");
 
     if(error_process(&sbuf, filename, con->fd))
         return -1;
@@ -202,18 +202,18 @@ int OnMessageBeginCallback(http_parser *parser)
     memset(c->con_request.url, 0 , sizeof(c->con_request.url));
     memset(c->con_request.inbuf, 0, sizeof(c->con_request.inbuf));
 
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
 
     return 0;
 }
 
 int OnUrlCallback(http_parser *parser, const char *at, size_t length)
 {
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
     connection_t *c = (connection_t*)parser->data;
     strncpy(c->con_request.url, at + 1, length - 1);
 
-    printf("%s", c->con_request.url);
+    // printf("%s", c->con_request.url);
     fflush(stdout);
 
     return 0;
@@ -221,19 +221,19 @@ int OnUrlCallback(http_parser *parser, const char *at, size_t length)
 
 int OnHeaderFieldCallback(http_parser *parser, const char *at, size_t length)
 {
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
     return 0;
 }
 
 int OnHeaderValueCallback(http_parser *parser, const char *at, size_t length)
 {
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
     return 0;
 }
 
 int OnHeadersCompleteCallback(http_parser *parser)
 {
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
     connection_t *c = (connection_t*)parser->data;
     c->con_request.method = parser->method;
     return 0;
@@ -241,13 +241,13 @@ int OnHeadersCompleteCallback(http_parser *parser)
 
 int OnBodyCallback(http_parser *parser)
 {
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
     return 0;
 }
 
 int OnMessageCompleteCallback(http_parser *parser)
 {
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
     connection_t *c = (connection_t*)parser->data;
 
 	if( http_should_keep_alive (parser) == 0 )
@@ -256,7 +256,7 @@ int OnMessageCompleteCallback(http_parser *parser)
     }else{
         c->keep_alive = 1;
     }
-    printf("if keep_alive:%d.", c->keep_alive);
+    // printf("if keep_alive:%d.", c->keep_alive);
     c->con_request.req_status = 1;
     return 0;
 }
@@ -300,6 +300,7 @@ void connection_free(connection_t *con)
 
 connection_t* connection_accept(int conn_fd, int epoll_fd, struct sockaddr_in *paddr)
 {
+    printf("Worker ID: %d accept new connection.\n", getpid());
     // 配置coinnection_t内存空间
     // connection_t *c = connection_init();
     connection_t *c = malloc(sizeof(connection_t));

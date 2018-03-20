@@ -16,13 +16,11 @@ int set_fd_nonblocking( int fd )
     int flag = fcntl(fd, F_GETFL, 0) ;
     if( flag < 0 )
     {
-        printf("123");
         return -1;
     }
 
     if(fcntl(fd, F_SETFL, flag | O_NONBLOCK) < 0)
     {
-        printf("123");
         return -1;
     }
     return 0;
@@ -36,7 +34,6 @@ int socket_bind_listen(int port)
     // 创建socket，返回监听描述符
     if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
     {
-         printf("123");
          return -1;
     }
 
@@ -47,7 +44,6 @@ int socket_bind_listen(int port)
     int reuse = 1;
     if(setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1)
     {
-        printf("123");
         return -1;
     }
 
@@ -59,14 +55,12 @@ int socket_bind_listen(int port)
 
     if ( bind(listenfd, (struct sockaddr*)&listenaddr, sizeof(listenaddr)) == -1 )
     {
-        printf("123");
         return -1;
     }
 
     // 开始监听，最大等待队列长为LISTENQ(未完成连接队列 + 已完成连接队列）
     if (listen(listenfd, LISTENQ) == -1 )
     {
-        printf("123");
         return -1;
     }
 
@@ -78,8 +72,8 @@ int server_accept(int listen_fd, int epoll_fd)
     int conn_fd;
     // 设置为静态局部变量，减少内存分配和释放的操作次数
     // static struct sockaddr_in saddr;
-    printf("enter server_accept().\n");
-    fflush(stdout);
+    // printf("enter server_accept().\n");
+    // fflush(stdout);
     struct sockaddr_in saddr;
     socklen_t saddrlen = sizeof(struct sockaddr_in);
 
@@ -88,8 +82,8 @@ int server_accept(int listen_fd, int epoll_fd)
     {
                 // 循环抱住accept调用: ET模式，多个就绪连接到达时候，只会通知一次，accept只处理一个连接
         connection_accept(conn_fd, epoll_fd,&saddr);
-        printf("new connection.\n");
-        fflush(stdout);
+        // printf("new connection.\n");
+        // fflush(stdout);
 
     }
 

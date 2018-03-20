@@ -11,7 +11,7 @@
 
 int error_process(struct stat* sbufptr, char *filename, int fd)
 {
-    printf("enter error_process\n");
+    // printf("enter error_process\n");
         // 处理文件找不到错误
     char filename1[256] = "index.html";
 
@@ -38,7 +38,7 @@ int error_process(struct stat* sbufptr, char *filename, int fd)
 // 响应错误信息
 void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_msg)
 {
-    printf("%s\n", __FUNCTION__);
+    // printf("%s\n", __FUNCTION__);
     // 响应头缓冲（512字节）和数据缓冲（10240字节）
     char header[512];
     char body[BUFFSIZE];
@@ -69,7 +69,7 @@ void do_error(int fd, char *cause, char *err_num, char *short_msg, char *long_ms
 // 处理静态文件请求
 void serve_static(int fd, char *filename, size_t filesize, connection_t *con)
 {
-    printf("enter server_static.\n");
+    // printf("enter server_static.\n");
     // 响应头缓冲（512字节）
     char header[512];
 

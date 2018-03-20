@@ -81,7 +81,7 @@ int heap_insert(connection_t *con)
     con->heap_idx = heap_size - 1;
     heap_percolate_up(con->heap_idx);
 
-    printf("heap_size: %d\n", heap_size);
+    // printf("heap_size: %d\n", heap_size);
 
     return 0;
 }
